@@ -1,0 +1,76 @@
+---
+title: "P8105 Homework 3: Vizualizaiton and EDA"
+author: "Catherine Lucey (UNI: cml2270)"
+date: "10/13/2021"
+output: html_document
+---
+
+## Setup
+Only done once, the setup code loads the necessary libraries and double checks that the working directory is correct. It also sets defaults for figure size with knitr, as well as a default theme and color scale for all ggplots.
+
+```{r setup}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+getwd()
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+#Problem 1: Instacart
+
+```{r load instacart data and plot}
+
+library(p8105.datasets)
+instacart_df = data("instacart")
+
+instacart %>% 
+  group_by(aisle_id, aisle) %>% 
+  summarise(n_obs = n())
+```
+
+After grouping by aisle ID number, the 134 rows in the grouped datframe correspond to the 134 different aisles in the store.
+
+```{r}
+instacart %>% 
+  group_by(aisle_id, aisle) %>% 
+  summarise(n_obs = n()) %>% 
+  filter(n_obs >= 10000) %>% 
+  ggplot(aes(x = aisle_id, y = n_obs, fill = aisle)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  geom_col(width = 2.5) +
+  geom_text(aes(label = aisle), nudge_x = 0.5, check_overlap = TRUE, size = 2) +
+  theme(legend.position = "none")
+
+  #geom_text(label = aisle, check_overlap = TRUE)
+
+#geom_text(inherit.aes = TRUE, label = "aisle", label.size = 2)
+```
+
+
+
+
+```{r}
+instacart %>% 
+  group_by(aisle, product_name) %>% 
+  summarise(
+    n_ordered = n(product_name),
+    most_ordered = max(product_name)
+  )
+```
+
+
