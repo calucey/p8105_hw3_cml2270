@@ -2,8 +2,11 @@
 title: "P8105 Homework 3: Vizualizaiton and EDA"
 author: "Catherine Lucey (UNI: cml2270)"
 date: "10/13/2021"
-output: html_document
+output: github_document
 ---
+
+YOU HAVE TO DO THIS: create a subdirectory to store the local data files used in Problems 1 and 2, and use relative paths to access these data files
+
 
 ## Setup
 Only done once, the setup code loads the necessary libraries and double checks that the working directory is correct. It also sets defaults for figure size with knitr, as well as a default theme and color scale for all ggplots.
@@ -30,47 +33,188 @@ options(
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
-#Problem 1: Instacart
+# Problem 1: Instacart
 
 ```{r load instacart data and plot}
 
 library(p8105.datasets)
-instacart_df = data("instacart")
+data("instacart")
 
 instacart %>% 
   group_by(aisle_id, aisle) %>% 
   summarise(n_obs = n())
 ```
 
-After grouping by aisle ID number, the 134 rows in the grouped datframe correspond to the 134 different aisles in the store.
+After grouping by aisle ID number, the 134 rows in the grouped dataframe correspond to the 134 different aisles in the store.
+
+NOTES: FIX
+group by product id ---> number of products --> n_obs should then correspond to the products
 
 ```{r}
 instacart %>% 
-  group_by(aisle_id, aisle) %>% 
-  summarise(n_obs = n()) %>% 
-  filter(n_obs >= 10000) %>% 
-  ggplot(aes(x = aisle_id, y = n_obs, fill = aisle)) +
+  group_by(aisle_id, aisle, department_id, department) %>% 
+  summarise(n_pdts = n()) %>% 
+  filter(n_pdts >= 10000) %>% 
+  ggplot(aes(x = reorder(aisle_id, department_id), y = n_pdts, fill = department)) +
   geom_bar(stat = "identity") +
   coord_flip() +
-  geom_col(width = 2.5) +
-  geom_text(aes(label = aisle), nudge_x = 0.5, check_overlap = TRUE, size = 2) +
-  theme(legend.position = "none")
+  geom_col(width = 1) +
+  geom_text(aes(label = aisle), check_overlap = TRUE, size = 2) +
+  theme(legend.position = "left")
 
-  #geom_text(label = aisle, check_overlap = TRUE)
+```
 
-#geom_text(inherit.aes = TRUE, label = "aisle", label.size = 2)
+FILTER BY MULTIPLE THINGS USING PIPE |
+
+    Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+    Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+
+
+```{r eval = FALSE}
+instacart %>% 
+  filter(aisle == "baking ingredients" | "dog food care" | "packaged vegetables fruits") %>% 
+  group_by(aisle, product_name) %>% 
+  summarise(
+    n_ordered = n(),
+    most_ordered = max(product_name)
+  )
 ```
 
 
+# Problem 2
 
+First, do some data cleaning:
+
+    format the data to use appropriate variable names;
+    focus on the “Overall Health” topic
+    include only responses from “Excellent” to “Poor”
+    organize responses as a factor taking levels ordered from “Poor” to “Excellent”
+
+Using this dataset, do or answer the following (commenting on the results of each):
+
+    In 2002, which states were observed at 7 or more locations? What about in 2010?
+    Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+    Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+
+
+
+```{r load BRFSS data and clean}
+
+library(p8105.datasets)
+data("brfss_smart2010")
+
+brfss_overall_df =
+  brfss_smart2010 %>% 
+  rename(county = Locationdesc, state = Locationabbr) %>%
+  janitor::clean_names() %>% 
+  filter(topic == "Overall Health") %>% 
+  mutate(response = as_factor(response), levels(c("Excellent", "Very Good", "Good", "Fair", "Poor")))
+
+```
+
+Using this dataset, do or answer the following (commenting on the results of each):
+
+    In 2002, which states were observed at 7 or more locations? What about in 2010?
+    Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+    Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+    
+### States with 7 or More Study Sites in 2002 and 2010
+
+The table below lists the states that had more than 7 BRFSS study sites in the years 2002 and 2010, as well as lists the number of county-level sites per state in each year. 
 
 ```{r}
-instacart %>% 
-  group_by(aisle, product_name) %>% 
-  summarise(
-    n_ordered = n(product_name),
-    most_ordered = max(product_name)
-  )
+
+seven_sites_2002 = 
+  brfss_overall_df %>% 
+  filter(year == 2002) %>% 
+  group_by(state) %>% 
+  summarise(n_sites_2002 = n()) %>% 
+  filter(n_sites_2002 >= 7)
+
+seven_sites_2010 = 
+  brfss_overall_df %>% 
+  filter(year == 2010) %>% 
+  group_by(state) %>% 
+  summarise(n_sites_2010 = n()) %>% 
+  filter(n_sites_2010 >= 7)
+
+seven_sites_join_df =
+  full_join(seven_sites_2002, seven_sites_2010, by = "state") %>% 
+  arrange(state)
+
+knitr::kable(seven_sites_join_df)
+
+```
+
+
+### Crude Prevalence of "Excellent" Overall Health in BRFSS Data
+Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+
+```{r}
+
+excellence_df = 
+  brfss_overall_df %>%  
+  filter(response == "Excellent") %>% 
+  group_by(state, year) %>% 
+  mutate(avg_val = mean(data_value)) %>% 
+  select(response, year, state, avg_val)
+
+excellence_df %>% 
+  ggplot(aes(x = year, y = avg_val, group = state, color = state)) + 
+  geom_line() +
+  ylab("Avg Crude Prevalence Per State (Across all Study Sites)") +
+  xlab("Year")
+  
+```
+
+ Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+
+
+# Problem 3
+
+
+    Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
+    Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+    Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+
+
+
+```{r load accelerometer data}
+
+accel_df = read_csv("accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_prefix = "activity_",
+    names_to = "minute", 
+    values_to = "amt_activity") %>%
+  group_by(week, day) %>% 
+  mutate(day_type = ifelse(day == "Saturday" | day == "Sunday", "weekend", "weekday"))
+
+
+```
+
+
+DESCRIBE DATASET
+
+```{r eval = FALSE}
+ accel_df %>% 
+  group_by(day_id, day_type) %>% 
+  summarise(total_activity = sum(amt_activity)) %>% 
+  ggplot(aes(x = day_id, y = total_actvity, color = day_type)) +
+  geom_point()
+
+```
+
+
+i think we could just modify the x axis
+```{r}
+
+accel_df %>% 
+ggplot(aes(x = minute, y = amt_activity, color = day)) +
+         geom_point() 
+
 ```
 
 
