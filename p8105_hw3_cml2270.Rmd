@@ -34,8 +34,8 @@ options(
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
-# Problem 1: Instacart
 
+# Problem 1: Instacart
 
 The Instacart dataset gives the details of many different Instacart orders. There are in total 1,384,617 observations, and 15 variables. Each observation is an item ordered through instacart, and that item is described by the customer order it belongs to, the aisle it came from, the department the aisle is in, the date and time the order was placed, as well as technical information like the customer order ID number and the product ID number. 
 
@@ -93,6 +93,7 @@ knitr::kable(aisle_popularity_df)
 
     Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
     
+Looking at when Pink Lady apples and coffee ice cream are typically ordered during the day, coffee ice cream tends to be ordered in the afternoon or evening, wheras pink lady apples are typically ordered in the late morning or early afternoon. Coffee ice cream tends to be ordered earlier in the day on weekends.
     
 ```{r time of day}
 
@@ -105,10 +106,13 @@ instacart %>%
                             '4' = "Thursday",
                             '5' = "Friday",
                             '6' = "Saturday")) %>% 
-  filter(product_name == "Pink")
-  group_by(order_dow, order_hour_of_day, )
-         
-
+  filter(product_name == c("Pink Lady Apples" , "Coffee Ice Cream")) %>% 
+  group_by(order_dow, product_name) %>% 
+  summarise(mean_hour = mean(order_hour_of_day)) %>%
+  select(order_dow, mean_hour, product_name) %>% 
+  pivot_wider(names_from = order_dow, values_from = mean_hour) %>% 
+  knitr::kable()
+  
 ```
 
 
@@ -216,7 +220,7 @@ nys_ratings_df =
 
 nys_ratings_df %>% 
   ggplot(aes(x = data_value, fill = response)) +
-  geom_density(alpha = 0.5) +
+  geom_density(alpha = 0.4) +
   theme(legend.position = "right") +
   labs(x = "Prevalence of Response (%)") +
   facet_grid(~ year) +
