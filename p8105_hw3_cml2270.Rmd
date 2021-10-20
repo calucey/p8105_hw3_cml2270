@@ -36,6 +36,9 @@ scale_fill_discrete = scale_fill_viridis_d
 ```
 # Problem 1: Instacart
 
+
+The Instacart dataset gives the details of many different Instacart orders. There are in total 1,384,617 observations, and 15 variables. Each observation is an item ordered through instacart, and that item is described by the customer order it belongs to, the aisle it came from, the department the aisle is in, the date and time the order was placed, as well as technical information like the customer order ID number and the product ID number. 
+
 ```{r load instacart data and plot}
 
 library(p8105.datasets)
@@ -48,8 +51,9 @@ instacart %>%
 
 After grouping by aisle ID number, the 134 rows in the grouped dataframe correspond to the 134 different aisles in the store.
 
-NOTES: FIX
-group by product id ---> number of products --> n_obs should then correspond to the products
+### Aisles Most Commonly Ordered From
+
+Since each item ordered has an associated aisle, the frequency of each aisle value in the "aisle_id" column gives the number of items ordered from each aisle. The aisle data are grouped by department. This plot shows that items are most often ordered from fresh vegetables and fruits aisles, and that the "produce" department overall is the most popular in Instacart orders. The next most popular department is the dairy department, within which the greatest number of items are ordered from the yogurt aise. 
 
 ```{r fig.width=10}
 instacart %>% 
@@ -65,25 +69,50 @@ instacart %>%
 
 ```
 
-FILTER BY MULTIPLE THINGS USING PIPE |
+### Most-Ordered Items in Particular Aisles
 
-    Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
-    Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+The next table shows the three most popular items (as ranked by order frequency) in the dog food and care aisle, the baking ingredients aise, and the packaged vegetable and fruits aise. In the dog food and care aisle, Organix Grain Free Chicken & Vegetable Dog Food	is the most commonly ordered item, light brown sugar is the most popular item in the baking aisle, and organic baby spinach is the most popular item in the packaged fruits and vegetable aisle. The second and third most popular items in each aisle are similar to the first most pouplar item; for example, the third most popular item in the baking and ingredients aisle is granulated white sugar.
 
+```{r}
 
-
-```{r eval = FALSE}
-instacart %>% 
-  filter(aisle == "baking ingredients" | "dog food care" | "packaged vegetables fruits") %>% 
+aisle_popularity_df = 
+  instacart %>% 
+  filter(aisle == c("packaged vegetables fruits" , "dog food care" , "baking ingredients")) %>% 
   group_by(aisle, product_name) %>% 
   summarise(
-    n_ordered = n(),
-    most_ordered = max(product_name)
-  )
+    n_ordered = n()) %>% 
+  mutate(rank = min_rank(desc(n_ordered))) %>% 
+  filter(rank <= 3)
+
+knitr::kable(aisle_popularity_df)
+
+```
+
+### Most Popular Items at Different Times of Day
+
+
+    Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+    
+    
+```{r time of day}
+
+instacart %>% 
+  mutate(order_dow = as.character(order_dow)) %>% 
+  mutate(order_dow = recode(order_dow, '0' = "Sunday", 
+                            '1' = "Monday", 
+                            '2' = "Tuesday",
+                            '3' = "Wednesday",
+                            '4' = "Thursday",
+                            '5' = "Friday",
+                            '6' = "Saturday")) %>% 
+  filter(product_name == "Pink")
+  group_by(order_dow, order_hour_of_day, )
+         
+
 ```
 
 
-# Problem 2
+# Problem 2: BRFSS Data
 
 First, do some data cleaning:
 
@@ -230,11 +259,13 @@ accel_df = read_csv("accel_data.csv") %>%
 daily_totals_df =
   accel_df %>% 
   group_by(day_id, day_type, amt_activity) %>% 
-  mutate(total_activity = sum(amt_activity))
+  mutate(total_activity = sum(amt_activity)) %>% 
+  select(day_id, day_type, total_activity)
 
 daily_totals_df %>% 
-  ggplot(aes(x = day_id, y = total_activity, color = day_type)) +
-  geom_point()
+  knitr::kable()
+  #ggplot(aes(x = day_id, y = total_activity, color = day_type)) +
+  #geom_point()
 
 ```
 
