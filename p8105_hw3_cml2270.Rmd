@@ -5,9 +5,6 @@ date: "10/13/2021"
 output: github_document
 ---
 
-YOU HAVE TO DO THIS: create a subdirectory to store the local data files used in Problems 1 and 2, and use relative paths to access these data files
-
-
 ## Setup
 Only done once, the setup code loads the necessary libraries and double checks that the working directory is correct. It also sets defaults for figure size with knitr, as well as a default theme and color scale for all ggplots.
 
@@ -88,11 +85,8 @@ knitr::kable(aisle_popularity_df)
 
 ```
 
-### Most Popular Items at Different Times of Day
+### Ice Cream and Apple Orders at Different Times of Day
 
-
-    Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
-    
 Looking at when Pink Lady apples and coffee ice cream are typically ordered during the day, coffee ice cream tends to be ordered in the afternoon or evening, wheras pink lady apples are typically ordered in the late morning or early afternoon. Coffee ice cream tends to be ordered earlier in the day on weekends.
     
 ```{r time of day}
@@ -118,19 +112,6 @@ instacart %>%
 
 # Problem 2: BRFSS Data
 
-First, do some data cleaning:
-
-    format the data to use appropriate variable names;
-    focus on the “Overall Health” topic
-    include only responses from “Excellent” to “Poor”
-    organize responses as a factor taking levels ordered from “Poor” to “Excellent”
-
-Using this dataset, do or answer the following (commenting on the results of each):
-
-    In 2002, which states were observed at 7 or more locations? What about in 2010?
-    Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
-    Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
-
 ### Load and Clean the BRFSS data
 
 Tidying the BRFSS data.
@@ -149,9 +130,6 @@ brfss_overall_df =
 
 ```
 
-Using this dataset, do or answer the following (commenting on the results of each):
-
-    
 ### States with 7 or More Study Sites in 2002 and 2010
 
 The table below lists the states that had more than 7 BRFSS study sites in the years 2002 and 2010, as well as lists the number of county-level sites per state in each year. Most states had more than 7 study sites, and in 2010 there were more states with 7+ study sites than in 2002, suggesting that sites were continually added in the study.
@@ -183,9 +161,8 @@ knitr::kable(seven_sites_join_df)
 
 ### Prevalence of "Excellent" Overall Health Responses in BRFSS Data
 
-Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
 
-The following code creates a dataframe giving the crude prevalence of "excellent" overall health ratings in each state (averaged across all state study sites) annually from 2002 to 2010. The plot shows the change in the prevalence of "Excellent" health ratings across time. In this plot, Wyoming study sites had the overall lowest percentage of "excellent" health ratings, and the prevalence of "excellent" responses in Wyoming was also the among the most variable betwen 2002 and 2010.
+The following code creates a dataframe giving the crude prevalence of "excellent" overall health ratings in each state (averaged across all state study sites) annually from 2002 to 2010. The plot shows the change in the prevalence of "Excellent" health ratings across time. In this plot, Wyoming study sites had the overall lowest percentage of "excellent" health ratings, and the prevalence of "excellent" responses in Wyoming was also the among the most variable between 2002 and 2010.
 
 ```{r}
 
@@ -228,14 +205,7 @@ nys_ratings_df %>%
 ```
 
 
-
 # Problem 3
-
-
-    Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
-    
-    Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
-    Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
 
 ### Tidying and Describing the Acceleromter Data
 
@@ -257,30 +227,46 @@ accel_df = read_csv("accel_data.csv") %>%
 
 ```
 
+### Total Activity on Weekdays vs. Weekends
 
 ```{r}
 
 daily_totals_df =
   accel_df %>% 
-  group_by(day_id, day_type, amt_activity) %>% 
-  mutate(total_activity = sum(amt_activity)) %>% 
-  select(day_id, day_type, total_activity)
-
+  group_by(day_id, day_type, day) %>% 
+  summarise(
+    total_activity = sum(amt_activity)
+  ) %>% 
+  select(day_id, day_type, day, total_activity)
+ 
 daily_totals_df %>% 
   knitr::kable()
-  #ggplot(aes(x = day_id, y = total_activity, color = day_type)) +
-  #geom_point()
+  
+daily_totals_df %>% 
+  ggplot(aes(x = day_id, y = total_activity,fill = day_type)) +
+  geom_point() +
+  geom_smooth() +
+  theme(legend.position = "right")
 
 ```
 
+After finding the total activity amount for each day, it can be seen that the maximum amount of activity was `r max(pull(daily_totals_df, "total_activity"))`, which occurred on day 16, a weekday. Plotting the total activity per day and grouping by day type (weekend vs. weekday) shows the participant was generally more active on weekends at the beginning of the study, but by the end of the study at day 35, the participant was more active on weekdays and less active on weekends.
 
-i think we could just modify the x axis
+### Minute-by-minute Activity Over the Week
+
+Plotting the minute-by-minute activity counts over the course of 24 hours shows a wide range in the amount of activity during the day. Activity peaks on Friday at about 8 o'clock, and falls again around midnight, when presumably the participant went to bed. It appears that the participant wakes up at around 7AM, as there is a peak of activity at 420 minutes for most days. The participant was also active on Saturday afternoons, when hopefully they were doing something fun.
+
 ```{r}
 
 accel_df %>% 
 ggplot(aes(x = minute, y = amt_activity, color = day)) +
-         geom_point() 
+  geom_point(alpha = 0.5) +
+  scale_x_continuous(
+    breaks = seq(0, 1440, 60)
+  ) +
+  geom_smooth() +
+  theme(legend.position = "right") +
+  labs(x = "Minute (tick marks are hour)", y = "Amount Activity" , title = "Minute-by-Minute Activity Counts Over 24 Hours Per Day Type")
+  
 
 ```
-
-
